@@ -6,8 +6,8 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const { validateRegister, validateLogin, validateUpdateProfile } = require('../middleware/validators');
 
 // Public routes
-router.post('/register', authLimiter, authController.register);
-router.post('/login', authLimiter, authController.login);
+router.post('/register', validateRegister, authController.register);
+router.post('/login', validateLogin, authController.login);
 
 // Protected routes
 router.get('/profile', authMiddleware, authController.getProfile);
