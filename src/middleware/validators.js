@@ -24,6 +24,15 @@ const validateRegister = [
         .matches(/[0-9]/).withMessage('Password harus mengandung angka')
         .matches(/[@$!%*?&#]/).withMessage('Password harus mengandung karakter spesial (@$!%*?&#)'),
 
+    body('password_confirmation')
+        .notEmpty().withMessage('Konfirmasi password wajib diisi')
+        .custom((value, { req }) => {
+            if (value !== req.body.password) {
+                throw new Error('Password dan konfirmasi password tidak sama');
+            }
+            return true;
+        }),
+
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
