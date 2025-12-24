@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(sanitizeInput);
 
-app.use(generalLimiter);
+// app.use(generalLimiter);
 
 app.get('/', (req, res) => {
     res.json({

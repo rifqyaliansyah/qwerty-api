@@ -1,37 +1,21 @@
 const { body, validationResult } = require('express-validator');
 
 const validateRegister = [
-    body('name')
+    body('username')
         .trim()
-        .notEmpty().withMessage('Nama wajib diisi')
-        .isLength({ min: 2 }).withMessage('Nama minimal 2 karakter')
-        .isLength({ max: 100 }).withMessage('Nama maksimal 100 karakter')
-        .matches(/^[a-zA-Z\s]+$/).withMessage('Nama hanya boleh berisi huruf dan spasi'),
+        .notEmpty().withMessage('Username wajib diisi')
+        .isLength({ max: 50 }).withMessage('Username maksimal 50 karakter'),
 
     body('email')
         .trim()
         .notEmpty().withMessage('Email wajib diisi')
         .isEmail().withMessage('Format email tidak valid')
-        .normalizeEmail()
-        .isLength({ max: 100 }).withMessage('Email maksimal 100 karakter'),
+        .normalizeEmail(),
 
     body('password')
         .notEmpty().withMessage('Password wajib diisi')
-        .isLength({ min: 8 }).withMessage('Password minimal 8 karakter')
-        .isLength({ max: 128 }).withMessage('Password maksimal 128 karakter')
-        .matches(/[a-z]/).withMessage('Password harus mengandung huruf kecil')
-        .matches(/[A-Z]/).withMessage('Password harus mengandung huruf besar')
-        .matches(/[0-9]/).withMessage('Password harus mengandung angka')
-        .matches(/[@$!%*?&#]/).withMessage('Password harus mengandung karakter spesial (@$!%*?&#)'),
-
-    body('password_confirmation')
-        .notEmpty().withMessage('Konfirmasi password wajib diisi')
-        .custom((value, { req }) => {
-            if (value !== req.body.password) {
-                throw new Error('Password dan konfirmasi password tidak sama');
-            }
-            return true;
-        }),
+        .isLength({ min: 6 }).withMessage('Password minimal 6 karakter')
+        .isLength({ max: 100 }).withMessage('Password maksimal 100 karakter'),
 
     (req, res, next) => {
         const errors = validationResult(req);
@@ -76,12 +60,10 @@ const validateLogin = [
 ];
 
 const validateUpdateProfile = [
-    body('name')
+    body('username')
         .optional()
         .trim()
-        .isLength({ min: 2 }).withMessage('Nama minimal 2 karakter')
-        .isLength({ max: 100 }).withMessage('Nama maksimal 100 karakter')
-        .matches(/^[a-zA-Z\s]+$/).withMessage('Nama hanya boleh berisi huruf dan spasi'),
+        .isLength({ max: 50 }).withMessage('Username maksimal 50 karakter'),
 
     (req, res, next) => {
         const errors = validationResult(req);
