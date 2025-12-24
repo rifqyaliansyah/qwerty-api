@@ -1,5 +1,5 @@
 const errorHandler = (err, req, res, next) => {
-    console.error('❌ Error:', err);
+    console.error('Error:', err);
 
     // Database error
     if (err.code === '23505') {

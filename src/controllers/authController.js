@@ -5,13 +5,21 @@ const UserModel = require('../models/userModel');
 const authController = {
     async register(req, res, next) {
         try {
-            const { name, email, password } = req.body;
+            const { username, email, password } = req.body;
 
             const existingUser = await UserModel.findByEmail(email);
             if (existingUser) {
                 return res.status(400).json({
                     success: false,
                     message: 'Email sudah terdaftar'
+                });
+            }
+
+            const existingUsername = await UserModel.findByUsername(username);
+            if (existingUsername) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username sudah digunakan'
                 });
             }
 
@@ -22,7 +30,7 @@ const authController = {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            const newUser = await UserModel.create(name, email, hashedPassword);
+            const newUser = await UserModel.create(username, email, hashedPassword);
 
             const token = jwt.sign(
                 { id: newUser.id, email: newUser.email },
@@ -106,9 +114,9 @@ const authController = {
 
     async updateProfile(req, res, next) {
         try {
-            const { name } = req.body;
+            const { username } = req.body;
 
-            const updatedUser = await UserModel.update(req.user.id, { name });
+            const updatedUser = await UserModel.update(req.user.id, { username });
 
             if (!updatedUser) {
                 return res.status(404).json({
