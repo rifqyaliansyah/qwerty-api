@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const UserModel = require('../models/userModel');
 const avatarHelper = require('../helpers/avatarHelper');
+const { formatAvatarUrl } = require('../helpers/urlHelper');
 
 const authController = {
     async register(req, res, next) {
@@ -41,6 +42,8 @@ const authController = {
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
             );
+
+            newUser.avatar_url = formatAvatarUrl(newUser.avatar_url);
 
             res.status(201).json({
                 success: true,
@@ -82,6 +85,7 @@ const authController = {
             );
 
             delete user.password;
+            user.avatar_url = formatAvatarUrl(user.avatar_url);
 
             res.status(200).json({
                 success: true,
@@ -106,6 +110,8 @@ const authController = {
                     message: 'User tidak ditemukan'
                 });
             }
+
+            user.avatar_url = formatAvatarUrl(user.avatar_url);
 
             res.status(200).json({
                 success: true,
@@ -141,6 +147,8 @@ const authController = {
                 });
             }
 
+            updatedUser.avatar_url = formatAvatarUrl(updatedUser.avatar_url);
+
             res.status(200).json({
                 success: true,
                 message: 'Profile berhasil diupdate',
@@ -153,10 +161,6 @@ const authController = {
 
     async uploadAvatar(req, res, next) {
         try {
-            // Debug log
-            console.log('req.file:', req.file);
-            console.log('req.body:', req.body);
-            console.log('req.headers:', req.headers);
 
             // Cek apakah file ada
             if (!req.file) {
@@ -187,6 +191,8 @@ const authController = {
                     message: 'User tidak ditemukan'
                 });
             }
+            
+            updatedUser.avatar_url = formatAvatarUrl(updatedUser.avatar_url);
 
             res.status(200).json({
                 success: true,
@@ -227,6 +233,8 @@ const authController = {
 
             // Update database
             const updatedUser = await UserModel.update(req.user.id, { avatar_url: newAvatarUrl });
+
+            updatedUser.avatar_url = formatAvatarUrl(updatedUser.avatar_url);
 
             res.status(200).json({
                 success: true,
