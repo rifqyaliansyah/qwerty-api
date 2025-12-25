@@ -2,13 +2,13 @@ const pool = require('../config/database');
 
 const UserModel = {
     // Create new user
-    async create(username, email, hashedPassword) {
+    async create(username, email, hashedPassword, avatarUrl) {
         const query = `
-      INSERT INTO users (username, email, password)
-      VALUES ($1, $2, $3)
-      RETURNING id, username, email, created_at
+      INSERT INTO users (username, email, password, avatar_url)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, username, email, avatar_url, created_at
     `;
-        const values = [username, email, hashedPassword];
+        const values = [username, email, hashedPassword, avatarUrl];
         const result = await pool.query(query, values);
         return result.rows[0];
     },
@@ -29,20 +29,43 @@ const UserModel = {
 
     // Find user by ID
     async findById(id) {
-        const query = 'SELECT id, username, email, created_at FROM users WHERE id = $1';
+        const query = 'SELECT id, username, email, avatar_url, created_at FROM users WHERE id = $1';
         const result = await pool.query(query, [id]);
         return result.rows[0];
     },
 
     // Update user
     async update(id, data) {
+        const fields = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (data.username) {
+            fields.push(`username = $${paramCount}`);
+            values.push(data.username);
+            paramCount++;
+        }
+
+        if (data.avatar_url) {
+            fields.push(`avatar_url = $${paramCount}`);
+            values.push(data.avatar_url);
+            paramCount++;
+        }
+
+        if (fields.length === 0) {
+            return null;
+        }
+
+        fields.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+
         const query = `
       UPDATE users 
-      SET username = $1, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      RETURNING id, username, email, updated_at
+      SET ${fields.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING id, username, email, avatar_url, updated_at
     `;
-        const values = [data.username, id];
+
         const result = await pool.query(query, values);
         return result.rows[0];
     }
