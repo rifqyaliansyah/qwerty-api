@@ -1,5 +1,5 @@
 const PostModel = require('../models/postModel');
-const { formatAvatarUrl } = require('../helpers/urlHelper');
+const { sanitizePost } = require('../helpers/postHelper');
 
 const postController = {
     // Create new post
@@ -16,15 +16,10 @@ const postController = {
                 styling
             );
 
-            // Format avatar URL jika ada author
-            if (newPost.author && newPost.author.avatar_url) {
-                newPost.author.avatar_url = formatAvatarUrl(newPost.author.avatar_url);
-            }
-
             res.status(201).json({
                 success: true,
                 message: 'Post berhasil dibuat',
-                data: { post: newPost }
+                data: { post: sanitizePost(newPost) }
             });
         } catch (error) {
             next(error);
@@ -41,17 +36,13 @@ const postController = {
             const posts = await PostModel.findAll(limit, offset);
             const total = await PostModel.count();
 
-            // Format avatar URLs
-            posts.forEach(post => {
-                if (post.author && post.author.avatar_url) {
-                    post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
-                }
-            });
+            // Sanitize posts (hide user_id & format avatar)
+            const sanitizedPosts = posts.map(post => sanitizePost(post));
 
             res.status(200).json({
                 success: true,
                 data: {
-                    posts,
+                    posts: sanitizedPosts,
                     pagination: {
                         total,
                         page,
@@ -78,14 +69,9 @@ const postController = {
                 });
             }
 
-            // Format avatar URL jika ada author
-            if (post.author && post.author.avatar_url) {
-                post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
-            }
-
             res.status(200).json({
                 success: true,
-                data: { post }
+                data: { post: sanitizePost(post) }
             });
         } catch (error) {
             next(error);
@@ -99,17 +85,12 @@ const postController = {
             const posts = await PostModel.findByUserId(userId);
             const total = await PostModel.countByUserId(userId);
 
-            // Format avatar URLs
-            posts.forEach(post => {
-                if (post.author && post.author.avatar_url) {
-                    post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
-                }
-            });
+            const sanitizedPosts = posts.map(post => sanitizePost(post, true));
 
             res.status(200).json({
                 success: true,
                 data: {
-                    posts,
+                    posts: sanitizedPosts,
                     total
                 }
             });
@@ -143,7 +124,7 @@ const postController = {
             res.status(200).json({
                 success: true,
                 message: 'Post berhasil diupdate',
-                data: { post: updatedPost }
+                data: { post: sanitizePost(updatedPost, true) }
             });
         } catch (error) {
             next(error);
