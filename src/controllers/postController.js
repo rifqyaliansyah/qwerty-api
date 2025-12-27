@@ -1,4 +1,5 @@
 const PostModel = require('../models/postModel');
+const LikeModel = require('../models/likeModel');
 const { formatAvatarUrl } = require('../helpers/urlHelper');
 
 const postController = {
@@ -38,7 +39,10 @@ const postController = {
             const page = parseInt(req.query.page) || 1;
             const offset = (page - 1) * limit;
 
-            const posts = await PostModel.findAll(limit, offset);
+            // Get user ID from token if authenticated, otherwise null
+            const userId = req.user ? req.user.id : null;
+
+            const posts = await PostModel.findAllWithLikes(limit, offset, userId);
             const total = await PostModel.count();
 
             // Format avatar URLs
@@ -69,7 +73,9 @@ const postController = {
     async getPostBySlug(req, res, next) {
         try {
             const slug = req.params.slug;
-            const post = await PostModel.findBySlug(slug);
+            const userId = req.user ? req.user.id : null;
+
+            const post = await PostModel.findBySlugWithLikes(slug, userId);
 
             if (!post) {
                 return res.status(404).json({
@@ -100,7 +106,7 @@ const postController = {
             const page = parseInt(req.query.page) || 1;
             const offset = (page - 1) * limit;
 
-            const posts = await PostModel.findByUserId(userId, limit, offset);
+            const posts = await PostModel.findByUserIdWithLikes(userId, limit, offset, userId);
             const total = await PostModel.countByUserId(userId);
 
             // Format avatar URLs
@@ -177,6 +183,37 @@ const postController = {
             res.status(200).json({
                 success: true,
                 message: 'Post berhasil dihapus'
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Toggle like
+    async toggleLike(req, res, next) {
+        try {
+            const slug = req.params.slug;
+            const userId = req.user.id;
+
+            // Get post by slug
+            const post = await PostModel.findBySlug(slug);
+            if (!post) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Post tidak ditemukan'
+                });
+            }
+
+            // Toggle like
+            const result = await LikeModel.toggleLike(post.id, userId);
+
+            res.status(200).json({
+                success: true,
+                message: result.isLiked ? 'Post dilike' : 'Like dibatalkan',
+                data: {
+                    is_liked: result.isLiked,
+                    likes_count: result.likesCount
+                }
             });
         } catch (error) {
             next(error);
