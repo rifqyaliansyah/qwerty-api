@@ -162,6 +162,13 @@ const authController = {
     async uploadAvatar(req, res, next) {
         try {
 
+            if (process.env.NODE_ENV === 'production') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Upload avatar belum tersedia di production'
+                });
+            }
+
             // Cek apakah file ada
             if (!req.file) {
                 return res.status(400).json({
