@@ -153,7 +153,7 @@ const PostModel = {
         let paramCount = 1;
 
         if (data.title !== undefined) {
-            fields.push(`title = ${paramCount}`);
+            fields.push(`title = $${paramCount}`);
             values.push(data.title);
             paramCount++;
 
@@ -161,26 +161,26 @@ const PostModel = {
                 const currentPost = await this.findBySlug(slug);
                 const newSlug = await this.generateUniqueSlug(data.title, currentPost.slug);
 
-                fields.push(`slug = ${paramCount}`);
+                fields.push(`slug = $${paramCount}`);
                 values.push(newSlug);
                 paramCount++;
             }
         }
 
         if (data.content !== undefined) {
-            fields.push(`content = ${paramCount}`);
+            fields.push(`content = $${paramCount}`);
             values.push(data.content);
             paramCount++;
         }
 
         if (data.is_anonymous !== undefined) {
-            fields.push(`is_anonymous = ${paramCount}`);
+            fields.push(`is_anonymous = $${paramCount}`);
             values.push(data.is_anonymous);
             paramCount++;
         }
 
         if (data.styling !== undefined) {
-            fields.push(`styling = ${paramCount}`);
+            fields.push(`styling = $${paramCount}`);
             values.push(JSON.stringify(data.styling));
             paramCount++;
         }
@@ -195,7 +195,7 @@ const PostModel = {
         const query = `
             UPDATE posts 
             SET ${fields.join(', ')}
-            WHERE slug = ${paramCount} AND user_id = ${paramCount + 1}
+            WHERE slug = $${paramCount} AND user_id = $${paramCount + 1}
             RETURNING id, user_id, slug, title, content, is_anonymous, styling, created_at, updated_at
         `;
 
