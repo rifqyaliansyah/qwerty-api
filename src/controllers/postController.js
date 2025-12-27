@@ -1,5 +1,5 @@
 const PostModel = require('../models/postModel');
-const { sanitizePost } = require('../helpers/postHelper');
+const { formatAvatarUrl } = require('../helpers/urlHelper');
 
 const postController = {
     // Create new post
@@ -16,10 +16,15 @@ const postController = {
                 styling
             );
 
+            // Format avatar URL jika ada author
+            if (newPost.author && newPost.author.avatar_url) {
+                newPost.author.avatar_url = formatAvatarUrl(newPost.author.avatar_url);
+            }
+
             res.status(201).json({
                 success: true,
                 message: 'Post berhasil dibuat',
-                data: { post: sanitizePost(newPost) }
+                data: { post: newPost }
             });
         } catch (error) {
             next(error);
@@ -36,13 +41,17 @@ const postController = {
             const posts = await PostModel.findAll(limit, offset);
             const total = await PostModel.count();
 
-            // Sanitize posts (hide user_id & format avatar)
-            const sanitizedPosts = posts.map(post => sanitizePost(post));
+            // Format avatar URLs
+            posts.forEach(post => {
+                if (post.author && post.author.avatar_url) {
+                    post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
+                }
+            });
 
             res.status(200).json({
                 success: true,
                 data: {
-                    posts: sanitizedPosts,
+                    posts,
                     pagination: {
                         total,
                         page,
@@ -69,9 +78,14 @@ const postController = {
                 });
             }
 
+            // Format avatar URL jika ada author
+            if (post.author && post.author.avatar_url) {
+                post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
+            }
+
             res.status(200).json({
                 success: true,
-                data: { post: sanitizePost(post) }
+                data: { post }
             });
         } catch (error) {
             next(error);
@@ -82,16 +96,30 @@ const postController = {
     async getMyPosts(req, res, next) {
         try {
             const userId = req.user.id;
-            const posts = await PostModel.findByUserId(userId);
+            const limit = parseInt(req.query.limit) || 50;
+            const page = parseInt(req.query.page) || 1;
+            const offset = (page - 1) * limit;
+
+            const posts = await PostModel.findByUserId(userId, limit, offset);
             const total = await PostModel.countByUserId(userId);
 
-            const sanitizedPosts = posts.map(post => sanitizePost(post, true));
+            // Format avatar URLs
+            posts.forEach(post => {
+                if (post.author && post.author.avatar_url) {
+                    post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
+                }
+            });
 
             res.status(200).json({
                 success: true,
                 data: {
-                    posts: sanitizedPosts,
-                    total
+                    posts,
+                    pagination: {
+                        total,
+                        page,
+                        limit,
+                        total_pages: Math.ceil(total / limit)
+                    }
                 }
             });
         } catch (error) {
@@ -124,7 +152,7 @@ const postController = {
             res.status(200).json({
                 success: true,
                 message: 'Post berhasil diupdate',
-                data: { post: sanitizePost(updatedPost, true) }
+                data: { post: updatedPost }
             });
         } catch (error) {
             next(error);

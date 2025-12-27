@@ -119,7 +119,7 @@ const PostModel = {
     },
 
     // Get posts by user ID (show all posts including anonymous for owner)
-    async findByUserId(userId) {
+    async findByUserId(userId, limit = 50, offset = 0) {
         const query = `
             SELECT 
                 p.id,
@@ -140,8 +140,9 @@ const PostModel = {
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.user_id = $1
             ORDER BY p.created_at DESC
+            LIMIT $2 OFFSET $3
         `;
-        const result = await pool.query(query, [userId]);
+        const result = await pool.query(query, [userId, limit, offset]);
         return result.rows;
     },
 
@@ -151,38 +152,35 @@ const PostModel = {
         const values = [];
         let paramCount = 1;
 
-        let currentPost = null;
-
         if (data.title !== undefined) {
-            currentPost = await this.findBySlug(slug);
-            if (!currentPost || currentPost.user_id !== userId) {
-                return null;
-            }
-
-            fields.push(`title = $${paramCount}`);
+            fields.push(`title = ${paramCount}`);
             values.push(data.title);
             paramCount++;
 
-            const newSlug = await this.generateUniqueSlug(data.title, currentPost.slug);
-            fields.push(`slug = $${paramCount}`);
-            values.push(newSlug);
-            paramCount++;
+            if (data.title) {
+                const currentPost = await this.findBySlug(slug);
+                const newSlug = await this.generateUniqueSlug(data.title, currentPost.slug);
+
+                fields.push(`slug = ${paramCount}`);
+                values.push(newSlug);
+                paramCount++;
+            }
         }
 
         if (data.content !== undefined) {
-            fields.push(`content = $${paramCount}`);
+            fields.push(`content = ${paramCount}`);
             values.push(data.content);
             paramCount++;
         }
 
         if (data.is_anonymous !== undefined) {
-            fields.push(`is_anonymous = $${paramCount}`);
+            fields.push(`is_anonymous = ${paramCount}`);
             values.push(data.is_anonymous);
             paramCount++;
         }
 
         if (data.styling !== undefined) {
-            fields.push(`styling = $${paramCount}`);
+            fields.push(`styling = ${paramCount}`);
             values.push(JSON.stringify(data.styling));
             paramCount++;
         }
@@ -191,16 +189,15 @@ const PostModel = {
             return null;
         }
 
-        fields.push(`updated_at = CURRENT_TIMESTAMP`);
-
+        fields.push('updated_at = CURRENT_TIMESTAMP');
         values.push(slug, userId);
 
         const query = `
-        UPDATE posts 
-        SET ${fields.join(', ')}
-        WHERE slug = $${paramCount} AND user_id = $${paramCount + 1}
-        RETURNING id, user_id, slug, title, content, is_anonymous, styling, created_at, updated_at
-    `;
+            UPDATE posts 
+            SET ${fields.join(', ')}
+            WHERE slug = ${paramCount} AND user_id = ${paramCount + 1}
+            RETURNING id, user_id, slug, title, content, is_anonymous, styling, created_at, updated_at
+        `;
 
         const result = await pool.query(query, values);
         return result.rows[0];
