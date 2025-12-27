@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-// require('./config/database');
+require('./config/database');
 
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
