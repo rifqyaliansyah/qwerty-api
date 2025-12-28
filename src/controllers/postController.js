@@ -69,6 +69,43 @@ const postController = {
         }
     },
 
+    // Get posts sorted by most liked
+    async getMostLikedPosts(req, res, next) {
+        try {
+            const limit = parseInt(req.query.limit) || 50;
+            const page = parseInt(req.query.page) || 1;
+            const offset = (page - 1) * limit;
+
+            // Get user ID from token if authenticated, otherwise null
+            const userId = req.user ? req.user.id : null;
+
+            const posts = await PostModel.findMostLikedWithLikes(limit, offset, userId);
+            const total = await PostModel.count();
+
+            // Format avatar URLs
+            posts.forEach(post => {
+                if (post.author && post.author.avatar_url) {
+                    post.author.avatar_url = formatAvatarUrl(post.author.avatar_url);
+                }
+            });
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    posts,
+                    pagination: {
+                        total,
+                        page,
+                        limit,
+                        total_pages: Math.ceil(total / limit)
+                    }
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
     // Get single post by SLUG
     async getPostBySlug(req, res, next) {
         try {
