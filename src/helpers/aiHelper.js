@@ -2,7 +2,7 @@ const Groq = require('groq-sdk');
 
 // Validasi API key saat startup
 if (!process.env.GROQ_API_KEY) {
-    console.error('❌ GROQ_API_KEY tidak ditemukan di .env');
+    console.error('GROQ_API_KEY tidak ditemukan di .env');
 }
 
 const groq = new Groq({
@@ -103,7 +103,7 @@ const aiHelper = {
 
             return quote.replace(/^["']|["']$/g, '');
         } catch (error) {
-            console.error('❌ Error generating custom quote:', error);
+            console.error('Error generating custom quote:', error);
 
             if (error.status === 401) {
                 throw new Error('API key tidak valid');
