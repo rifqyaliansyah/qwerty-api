@@ -124,10 +124,42 @@ const authController = {
 
     async updateProfile(req, res, next) {
         try {
-            const { username, regenerate_avatar } = req.body;
+            const { username, regenerate_avatar, current_password, new_password } = req.body;
 
             const updateData = {};
+            let passwordUpdated = false;
 
+            // Jika ada perubahan password
+            if (current_password && new_password) {
+                // Get user dengan password
+                const user = await UserModel.findByIdWithPassword(req.user.id);
+
+                if (!user) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'User tidak ditemukan'
+                    });
+                }
+
+                // Verify current password
+                const isPasswordValid = await bcrypt.compare(current_password, user.password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({
+                        success: false,
+                        message: 'Password lama salah'
+                    });
+                }
+
+                // Hash new password
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(new_password, salt);
+
+                // Update password
+                await UserModel.updatePassword(req.user.id, hashedPassword);
+                passwordUpdated = true;
+            }
+
+            // Update username jika ada
             if (username) {
                 updateData.username = username;
             }
@@ -138,7 +170,13 @@ const authController = {
                 updateData.avatar_url = avatarHelper.generateRandomAvatar(currentUser.username);
             }
 
-            const updatedUser = await UserModel.update(req.user.id, updateData);
+            // Update profile data jika ada perubahan
+            let updatedUser;
+            if (Object.keys(updateData).length > 0) {
+                updatedUser = await UserModel.update(req.user.id, updateData);
+            } else {
+                updatedUser = await UserModel.findById(req.user.id);
+            }
 
             if (!updatedUser) {
                 return res.status(404).json({
@@ -149,15 +187,64 @@ const authController = {
 
             updatedUser.avatar_url = formatAvatarUrl(updatedUser.avatar_url);
 
+            // Build success message
+            const updates = [];
+            if (username) updates.push('Profile');
+            if (passwordUpdated) updates.push('Password');
+            if (regenerate_avatar) updates.push('Avatar');
+
+            const message = updates.length > 0
+                ? `${updates.join(' dan ')} berhasil diupdate`
+                : 'Tidak ada perubahan';
+
             res.status(200).json({
                 success: true,
-                message: 'Profile berhasil diupdate',
+                message: message,
                 data: { user: updatedUser }
             });
         } catch (error) {
             next(error);
         }
     },
+
+    // async updatePassword(req, res, next) {
+    //     try {
+    //         const { current_password, new_password } = req.body;
+
+    //         // Get user dengan password
+    //         const user = await UserModel.findByIdWithPassword(req.user.id);
+
+    //         if (!user) {
+    //             return res.status(404).json({
+    //                 success: false,
+    //                 message: 'User tidak ditemukan'
+    //             });
+    //         }
+
+    //         // Verify current password
+    //         const isPasswordValid = await bcrypt.compare(current_password, user.password);
+    //         if (!isPasswordValid) {
+    //             return res.status(401).json({
+    //                 success: false,
+    //                 message: 'Password lama salah'
+    //             });
+    //         }
+
+    //         // Hash new password
+    //         const salt = await bcrypt.genSalt(10);
+    //         const hashedPassword = await bcrypt.hash(new_password, salt);
+
+    //         // Update password
+    //         await UserModel.updatePassword(req.user.id, hashedPassword);
+
+    //         res.status(200).json({
+    //             success: true,
+    //             message: 'Password berhasil diubah'
+    //         });
+    //     } catch (error) {
+    //         next(error);
+    //     }
+    // },
 
     async uploadAvatar(req, res, next) {
         try {
@@ -198,7 +285,7 @@ const authController = {
                     message: 'User tidak ditemukan'
                 });
             }
-            
+
             updatedUser.avatar_url = formatAvatarUrl(updatedUser.avatar_url);
 
             res.status(200).json({
