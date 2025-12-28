@@ -63,7 +63,6 @@ const deleteOldAvatar = (avatarUrl) => {
             const filePath = path.join('.', avatarUrl);
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
-                console.log('Old avatar deleted:', filePath);
             }
         }
     } catch (error) {
