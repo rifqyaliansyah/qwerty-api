@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('./config/database');
 
+const quoteRoutes = require('./routes/quoteRoutes');
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const errorHandler = require('./middleware/errorHandler');
@@ -46,6 +47,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/quotes', quoteRoutes);
 
 app.use(errorHandler);
 
