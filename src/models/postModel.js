@@ -130,6 +130,47 @@ const PostModel = {
         return result.rows;
     },
 
+    // Get posts sorted by most liked
+    async findMostLikedWithLikes(limit = 50, offset = 0, userId = null) {
+        const query = `
+            SELECT 
+                p.id,
+                p.user_id,
+                p.slug,
+                p.title,
+                p.content,
+                p.is_anonymous,
+                p.styling,
+                p.created_at,
+                p.updated_at,
+                CASE 
+                    WHEN p.is_anonymous = TRUE THEN NULL
+                    ELSE json_build_object(
+                        'id', u.id,
+                        'username', u.username,
+                        'avatar_url', u.avatar_url
+                    )
+                END as author,
+                CAST(COALESCE(like_counts.likes_count, 0) AS INTEGER) as likes_count,
+                CASE 
+                    WHEN $3 IS NOT NULL AND user_likes.id IS NOT NULL THEN TRUE
+                    ELSE FALSE
+                END as is_liked_by_user
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            LEFT JOIN (
+                SELECT post_id, COUNT(*) as likes_count
+                FROM post_likes
+                GROUP BY post_id
+            ) like_counts ON p.id = like_counts.post_id
+            LEFT JOIN post_likes user_likes ON p.id = user_likes.post_id AND user_likes.user_id = $3
+            ORDER BY likes_count DESC, p.created_at DESC
+            LIMIT $1 OFFSET $2
+        `;
+        const result = await pool.query(query, [limit, offset, userId]);
+        return result.rows;
+    },
+
     // Get post by SLUG (with user info, respect anonymous)
     async findBySlug(slug) {
         const query = `
