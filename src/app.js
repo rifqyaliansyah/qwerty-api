@@ -5,6 +5,7 @@ require('./config/database');
 const quoteRoutes = require('./routes/quoteRoutes');
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
+const viewRoutes = require('./routes/viewRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const sanitizeInput = require('./middleware/sanitizer');
@@ -40,6 +41,14 @@ app.get('/', (req, res) => {
                 getMyPosts: 'GET /api/posts/user/me (auth required)',
                 updatePost: 'PUT /api/posts/:slug (auth required)',
                 deletePost: 'DELETE /api/posts/:slug (auth required)'
+            },
+            quotes: {
+                generateQuote: 'GET /api/quotes/generate (auth required)',
+                generateCustomQuote: 'POST /api/quotes/generate/custom (auth required)'
+            },
+            views: {
+                trackView: 'POST /api/view',
+                getStats: 'GET /api/stats'
             }
         }
     });
@@ -48,6 +57,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/quotes', quoteRoutes);
+app.use('/api', viewRoutes);
 
 app.use(errorHandler);
 
