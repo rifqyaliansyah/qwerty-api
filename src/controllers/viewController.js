@@ -1,10 +1,11 @@
 const ViewModel = require('../models/viewModel');
+const crypto = require('crypto');
 
 class ViewController {
     // POST /view - Track page view
     static async trackView(req, res) {
         try {
-            const { url } = req.body;
+            const { url, sessionId } = req.body;
 
             // Validasi URL
             if (!url) {
@@ -14,14 +15,37 @@ class ViewController {
                 });
             }
 
-            // Tambah view
-            await ViewModel.addView(url);
+            // Generate session ID jika tidak ada
+            const finalSessionId = sessionId || crypto.randomBytes(16).toString('hex');
+
+            // Tracking data
+            const trackingData = {
+                url,
+                sessionId: finalSessionId
+            };
+
+            // Simpan view
+            const result = await ViewModel.addView(trackingData);
+
+            // Jika skipped karena duplicate, tetap return success
+            if (result.skipped) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'View already tracked',
+                    data: {
+                        url,
+                        sessionId: finalSessionId,
+                        skipped: true
+                    }
+                });
+            }
 
             return res.status(201).json({
                 success: true,
                 message: 'View tracked successfully',
                 data: {
                     url,
+                    sessionId: finalSessionId,
                     timestamp: new Date()
                 }
             });
@@ -42,11 +66,11 @@ class ViewController {
 
             let data;
 
-            // Berbagai tipe stats yang bisa dipilih
             switch (type) {
                 case 'total':
                     data = {
-                        total_views: await ViewModel.getTotalViews()
+                        total_views: await ViewModel.getTotalViews(),
+                        unique_visitors: await ViewModel.getUniqueVisitors()
                     };
                     break;
 
@@ -72,14 +96,11 @@ class ViewController {
                     break;
 
                 case 'today':
-                    data = {
-                        today_views: await ViewModel.getTodayStats()
-                    };
+                    data = await ViewModel.getTodayStats();
                     break;
 
                 case 'comprehensive':
                 default:
-                    // Default: comprehensive stats untuk Discord
                     data = await ViewModel.getComprehensiveStats();
                     break;
             }
